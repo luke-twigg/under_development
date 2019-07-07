@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Add new recipe</title>
+
+    <link rel="icon" href="data:,">
+
+
+    <script>
+
+    // add new category to option list on webpage and on server
+    function add_category() {
+        // get new category from user
+        var add_cat = prompt("Add new category");
+
+        // check if new category is null or invalid
+        if (add_cat == null || add_cat == "") {
+            alert("No category entered");
+            return;
+            };
+
+        // check if new category is already in list
+        var cat_sel = document.getElementById('category');
+        for (i = 0; i < cat_sel.length; i++){
+            if (add_cat == cat_sel.options[i].text){
+                alert("Category already available");
+                return;
+                };
+            };
+
+        // add new category to the drop down list and to the database
+
+        var new_category = document.createElement("option");
+        new_category.text = add_cat;
+        cat_sel.add(new_category);
+
+        var xhttp = new XMLHttpRequest();
+        var get_req = '../category_new?new_category=' +add_cat;
+        xhttp.open("GET", get_req, true);
+        xhttp.send();
+        };
+
+    // ingredients list setup
+    var ing_num = 0;        // list of number of ingredient rows
+    var ing_list = [];      // master list of ingredients
+
+    // add ingredients from database
+    {% for ing in ings %}
+    ing_list.push('{{ ing["Ingredient"] }}');
+    {% endfor %}
+
+    // ** to do: add code to show the units for the ingredients
+
+    // add row of possible ingredient
+    function ing_list_add() {
+
+        // increment number of ingredients shown
+        ing_num += 1;
+		document.getElementById('num_of_ing').value = ing_num
+
+
+        // setup 3 cells for ingredient data, including list of ingredients from db
+
+        var td1 = "<td><select name='ing" + ing_num + "' id='ing" + ing_num + "'>";
+        for (i = 0; i < ing_list.length; i++) {
+            td1 += "<option>" + ing_list[i] + "</option>";
+            }
+        td1 += "</select></td>";
+        var td2 = "<td><input type='number' name=ing_count" + ing_num + "></td>";
+        var td3 = "<td><button type='button' onclick='ing_list_remove(" + ing_num + ")'>-</button></td>";
+
+        // add row to last position in table
+        var table = document.getElementById('ingredients');
+        var row = table.insertRow(-1);
+
+        // set the id for the new row so it can be referenced later
+        row.setAttribute("id", "ing_tr" + ing_num);
+
+        // add the cell contents to the row
+        row.innerHTML = td1 + td2 + td3;
+
+        };
+
+    // remove ingredient row
+    function ing_list_remove(x) {
+
+        // identify index of row to be deleted from id
+        var i = document.getElementById('ing_tr' + x).rowIndex;
+
+        // delete row from ingredients table using index
+        document.getElementById('ingredients').deleteRow(i);
+        };
+
+		
+    // add new ingredient to list of ingredients on webpage and on server
+    function add_ingredient() {
+        var add_ing = prompt("Please enter the ingredient name");
+        var add_ing_unit = prompt("Please enter the unit of measurement \n e.g. gm, ml, no., pce, etc");
+
+        // check if user input is null or invalid
+        if (add_ing == null || add_ing == "" || add_ing_unit == null || add_ing_unit == "") {
+            alert("Insufficient information entered");
+            return;
+            };
+
+		// check if ingredient already in list
+        if (ing_list.includes(add_ing)) {
+            alert("Ingredient already in list");
+            return;
+            };
+
+        // add new ingredient to the js list of ingredients, any existing option lists, and to the database
+		ing_list.push(add_ing);
+		
+        for (i = 1; i<= ing_num; i++) {
+            var ing_select = document.getElementById('ing' + i);
+            if (ing_select != null) {
+				var new_ing = document.createElement("option");
+				new_ing.text = add_ing;
+                ing_select.add(new_ing);
+                }
+            };
+
+        var xhttp = new XMLHttpRequest();
+        var get_req = '../ingredient_new?new_ingredient=' +add_ing + '&new_ing_unit='+add_ing_unit;
+        xhttp.open("GET", get_req, true);
+        xhttp.send();
+        };
+
+
+    </script>
+</head>
+<body>
+
+<h1>Add a new recipe</h1>
+<form action = "../recipe_add" method="POST" name="recipe_new">
+
+    <label>Recipe Name</label><br>
+    <input type="text" name="recipe_name">
+    <p>
+    <label>Category</label><br>
+    <select name = "category" id="category" size="5" multiple>
+    {% for row in rows %}
+        <option>{{row["category"]}}</option>
+    {% endfor %}
+    </select>
+    <br>
+    <button type="button" onclick="add_category()">Add new category</button>
+    <p>
+    <table>
+        <tr><th><label>Servings</label></th><th><label>Preparation Time</label></th><th><label>Cooking Time</label></th></tr>
+        <tr><td><input type="number" name="servings"></td><td><input type="text" name="prep_time"></td><td><input type="text" name="cook_time"></td></tr>
+    </table>
+    <p>
+    <table id="ingredients">
+        <tr id="ing_tr0"><th>Ingredients</th><th>Quantity</th><th>Remove</th></tr>
+    </table>
+    <button type='button' onclick="ing_list_add()">Add ingredient row</button>
+	<button type="button" onclick="add_ingredient()">New ingredient option</button>
+	<input type='hidden' id='num_of_ing' name='num_of_ing' value=0>
+	<p>
+	<button type="submit">Confirm Recipe</button>
+
+
+
+</form>
+
+</body>
+</html>
